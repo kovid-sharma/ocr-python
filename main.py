@@ -2,20 +2,29 @@ import cv2
 import numpy as np
 import base64
 import json
-from markupsafe import escape
+from flask import Flask, request, jsonify
 
-def detect_black_dots(request):
-    # Parse the image from the request
+app = Flask(__name__)
+
+@app.route('/detect_black_dots', methods=['POST'])
+def detect_black_dots():
     try:
+        # Parse the image from the request
         request_json = request.get_json()
         image_data = request_json.get("image")  # Base64-encoded image
         grid_rows = request_json.get("grid_rows", 5)  # Default grid rows
         grid_cols = request_json.get("grid_cols", 5)  # Default grid cols
 
+        if not image_data:
+            return jsonify({"error": "Image data is missing"}), 400
+
         # Decode the image
         image_bytes = base64.b64decode(image_data)
         nparr = np.frombuffer(image_bytes, np.uint8)
         image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+
+        if image is None:
+            return jsonify({"error": "Invalid image data"}), 400
 
         # Convert to grayscale
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -42,7 +51,10 @@ def detect_black_dots(request):
             black_dots.append({"row": row, "col": col})
 
         # Return the positions of the black dots
-        return json.dumps({"black_dots": black_dots})
+        return jsonify({"black_dots": black_dots})
 
     except Exception as e:
-        return json.dumps({"error": str(e)})
+        return jsonify({"error": str(e)}), 500
+
+if __name__ == "__main__":
+    app.run(debug=True)
