@@ -18,11 +18,6 @@ def detect_black_dots():
         if not image_data:
             return jsonify({"error": "Image data is missing"}), 400
 
-        # Correct padding for Base64 string if necessary
-        padding_needed = len(image_data) % 4
-        if padding_needed != 0:
-            image_data += '=' * (4 - padding_needed)  # Add the necessary padding
-
         # Decode the image
         image_bytes = base64.b64decode(image_data)
         nparr = np.frombuffer(image_bytes, np.uint8)
@@ -45,24 +40,18 @@ def detect_black_dots():
         cell_height = height // grid_rows
         cell_width = width // grid_cols
 
-        # Detect black dots and organize by row
-        dots_map = {}
+        # Detect black dots
+        black_dots = []
         for contour in contours:
             x, y, w, h = cv2.boundingRect(contour)
             center_x = x + w // 2
             center_y = y + h // 2
             row = min(center_y // cell_height, grid_rows - 1) + 1
             col = min(center_x // cell_width, grid_cols - 1) + 1
-            if row not in dots_map:
-                dots_map[row] = []
-            dots_map[row].append(col)
+            black_dots.append({"row": row, "col": col})
 
-        # Sort the column indices in each row
-        for row in dots_map:
-            dots_map[row].sort()
-
-        # Return the map of black dots
-        return jsonify({"black_dots_map": dots_map})
+        # Return the positions of the black dots
+        return jsonify({"black_dots": black_dots})
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
