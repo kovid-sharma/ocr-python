@@ -59,7 +59,7 @@ def detect_black_dots():
 
         # Sort the column indices in each row
         for row in dots_map:
-            row= "\nRow"+row+"-"
+            
             dots_map[row].sort()
 
         # Return the map of black dots
